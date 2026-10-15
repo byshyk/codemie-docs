@@ -36,6 +36,11 @@ original messages are sent to the model unchanged (the feature fails open).
 
 The mode is read once per process, so a change to `HEADROOM_MODE` requires a restart of the CodeMie API.
 
+### What Is Compressed
+
+- User messages, when **Compress user input** is on.
+- Tool results and earlier assistant replies fed back into the context, when **Compress tool outputs** is on.
+
 ### What Is Not Compressed
 
 - System messages.

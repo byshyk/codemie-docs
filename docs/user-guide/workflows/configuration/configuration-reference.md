@@ -234,7 +234,7 @@ workflow is validated.
 
 - **enabled**: Turns compression on or off
 - **compress_user_messages**: Compress human messages
-- **compress_tool_outputs**: Compress tool results
+- **compress_tool_outputs**: Compress tool results and earlier assistant replies
 - **strategy**: `lossless`, `balanced`, or `aggressive`. `balanced` is the default when compression
   is enabled. `lossless` is the only strategy that keeps the provider prompt cache intact.
 

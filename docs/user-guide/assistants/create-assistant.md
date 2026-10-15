@@ -233,12 +233,12 @@ assistant configuration form after the sub-assistants block. For the administrat
 
 **Settings**
 
-| Setting                        | Behavior                                                                                      |
-| ------------------------------ | --------------------------------------------------------------------------------------------- |
-| **Enable context compression** | Switch that turns compression on for the assistant. Off by default                            |
-| **Compress user input**        | Compresses user messages. Checked when compression is first enabled                           |
-| **Compress tool outputs**      | Compresses tool results. Checked when compression is first enabled                            |
-| **Strategy**                   | **Lossless**, **Balanced**, or **Aggressive**. **Balanced** when compression is first enabled |
+| Setting                        | Behavior                                                                                         |
+| ------------------------------ | ------------------------------------------------------------------------------------------------ |
+| **Enable context compression** | Switch that turns compression on for the assistant. Off by default                               |
+| **Compress user input**        | Compresses user messages. Checked when compression is first enabled                              |
+| **Compress tool outputs**      | Compresses tool results and earlier assistant replies. Checked when compression is first enabled |
+| **Strategy**                   | **Lossless**, **Balanced**, or **Aggressive**. **Balanced** when compression is first enabled    |
 
 **Strategies**
 
@@ -252,7 +252,6 @@ history, which can lower the provider's prompt-cache hit rate.
 **Not compressed**
 
 - System prompts.
-- Assistant replies.
 - Attached files and images, and messages that contain non-text content.
 - Sub-assistant calls. Sub-assistants do not inherit this setting and use their own saved
   configuration.
