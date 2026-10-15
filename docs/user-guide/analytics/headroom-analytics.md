@@ -46,19 +46,5 @@ Saved tokens are counted by CodeMie on the messages that are actually sent to th
 figures reflect the compression that was applied and not the compressor's own estimate.
 :::
 
-## Analytics API
-
-The same data is available through the analytics API:
-
-| Endpoint                                 | Returns                                      |
-| ---------------------------------------- | -------------------------------------------- |
-| `GET /v1/analytics/headroom/summary`     | Summary metrics for the selected period      |
-| `GET /v1/analytics/headroom/by-strategy` | Savings grouped by strategy, with pagination |
-| `GET /v1/analytics/headroom/timeseries`  | Compacted and saved tokens over time         |
-
-All endpoints accept the `time_period`, `start_date`, `end_date`, `users`, and `projects`
-filters. The `by-strategy` endpoint also accepts `page` and `per_page`. When the
-`features:headroom` customer feature is disabled, the endpoints return `404`.
-
 Headroom Analytics requires the `features:headroom` customer feature. For setup, see
 [Headroom Context Compression](../../admin/configuration/codemie/headroom-context-compression.md).
