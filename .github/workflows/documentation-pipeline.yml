@@ -16,16 +16,35 @@ jobs:
 
     steps:
       - name: Prepare Node.js project
+        id: setup
         uses: codemie-ai/ci-workflows/actions/setup-node-project@epmcdme-16232-v3
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: '1'
 
       - name: Validate last commit message
+        id: commit_message
         run: git log -1 --format='%B' | npx commitlint --verbose
 
       - name: Validate PR title
+        id: pr_title
         run: echo "${{ github.event.pull_request.title }}" | npx commitlint --verbose
+
+      - name: Write validation summary
+        if: always()
+        shell: bash
+        env:
+          SETUP_OUTCOME: ${{ steps.setup.outcome }}
+          COMMIT_OUTCOME: ${{ steps.commit_message.outcome }}
+          PR_TITLE_OUTCOME: ${{ steps.pr_title.outcome }}
+        run: |
+          {
+            printf '### Commit & PR Validation\n\n'
+            printf '| Check | Result |\n| --- | --- |\n'
+            printf '| Project setup | %s |\n' "$SETUP_OUTCOME"
+            printf '| Last commit message | %s |\n' "$COMMIT_OUTCOME"
+            printf '| PR title | %s |\n' "$PR_TITLE_OUTCOME"
+          } >> "$GITHUB_STEP_SUMMARY"
 
   secrets-detection:
     name: Secrets Detection
@@ -46,22 +65,50 @@ jobs:
 
     steps:
       - name: Prepare Node.js project
+        id: setup
         uses: codemie-ai/ci-workflows/actions/setup-node-project@epmcdme-16232-v3
 
       - name: Run TypeScript type checking
+        id: typecheck
         run: npm run typecheck
 
       - name: Run ESLint
+        id: eslint
         run: npm run lint:eslint
 
       - name: Run Prettier check
+        id: prettier
         run: npm run lint:prettier
 
       - name: Run Markdown linter
+        id: markdown
         run: npm run lint:markdown
 
       - name: Run spell check
+        id: spelling
         run: npm run lint:spelling
+
+      - name: Write linting summary
+        if: always()
+        shell: bash
+        env:
+          SETUP_OUTCOME: ${{ steps.setup.outcome }}
+          TYPECHECK_OUTCOME: ${{ steps.typecheck.outcome }}
+          ESLINT_OUTCOME: ${{ steps.eslint.outcome }}
+          PRETTIER_OUTCOME: ${{ steps.prettier.outcome }}
+          MARKDOWN_OUTCOME: ${{ steps.markdown.outcome }}
+          SPELLING_OUTCOME: ${{ steps.spelling.outcome }}
+        run: |
+          {
+            printf '### Code Quality Checks\n\n'
+            printf '| Check | Result |\n| --- | --- |\n'
+            printf '| Project setup | %s |\n' "$SETUP_OUTCOME"
+            printf '| TypeScript | %s |\n' "$TYPECHECK_OUTCOME"
+            printf '| ESLint | %s |\n' "$ESLINT_OUTCOME"
+            printf '| Prettier | %s |\n' "$PRETTIER_OUTCOME"
+            printf '| Markdown | %s |\n' "$MARKDOWN_OUTCOME"
+            printf '| Spelling | %s |\n' "$SPELLING_OUTCOME"
+          } >> "$GITHUB_STEP_SUMMARY"
 
   build:
     name: Build Documentation
@@ -74,21 +121,32 @@ jobs:
 
     steps:
       - name: Build project with PR preview configuration
+        id: build_site
         uses: codemie-ai/ci-workflows/actions/build-site@epmcdme-16232-v3
         env:
           DOCUSAURUS_URL: https://codemie-docs-pr-previews.s3.eu-central-1.amazonaws.com
           DOCUSAURUS_BASE_URL: /pr-${{ github.event.pull_request.number }}/
 
       - name: Upload build artifacts
+        id: upload_artifact
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: docs-build-pr-${{ github.event.pull_request.number }}
           path: build/
           retention-days: 1
 
-      - name: Build summary
-        if: success()
+      - name: Write build summary
+        if: always()
+        shell: bash
+        env:
+          BUILD_OUTCOME: ${{ steps.build_site.outcome }}
+          UPLOAD_OUTCOME: ${{ steps.upload_artifact.outcome }}
+          ARTIFACT_NAME: docs-build-pr-${{ github.event.pull_request.number }}
         run: |
-          echo "Documentation build completed successfully!"
-          echo "- Build: PASSED"
-          echo "- Artifacts uploaded for PR #${{ github.event.pull_request.number }}"
+          {
+            printf '### Documentation Build\n\n'
+            printf '| Step | Result |\n| --- | --- |\n'
+            printf '| Site build | %s |\n' "$BUILD_OUTCOME"
+            printf '| Artifact upload | %s |\n' "$UPLOAD_OUTCOME"
+            printf '\nArtifact name: `%s`\n' "$ARTIFACT_NAME"
+          } >> "$GITHUB_STEP_SUMMARY"
