@@ -28,6 +28,6 @@ jobs:
           - javascript-typescript
           - actions
 
-    uses: codemie-ai/ci-workflows/.github/workflows/reusable-codeql.yml@epmcdme-16232-v3
+    uses: codemie-ai/ci-workflows/.github/workflows/reusable-codeql.yml@84f121ac899deab768202d4a1f9164322737b8ae # pre-release snapshot
     with:
       language: ${{ matrix.language }}

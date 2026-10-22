@@ -8,13 +8,32 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
   group: 'pages'
   cancel-in-progress: false
 
 jobs:
+  build:
+    name: Build site
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Prepare Node.js project
+        uses: codemie-ai/ci-workflows/actions/setup-node-project@84f121ac899deab768202d4a1f9164322737b8ae # pre-release snapshot
+
+      - name: Build website
+        run: npm run build
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: ./build
+
   deploy:
-    uses: codemie-ai/ci-workflows/.github/workflows/reusable-deploy-pages.yml@epmcdme-16232-v3
+    needs: build
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: codemie-ai/ci-workflows/.github/workflows/reusable-deploy-pages.yml@84f121ac899deab768202d4a1f9164322737b8ae # pre-release snapshot

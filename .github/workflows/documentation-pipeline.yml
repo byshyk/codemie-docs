@@ -17,7 +17,7 @@ jobs:
     steps:
       - name: Prepare Node.js project
         id: setup
-        uses: codemie-ai/ci-workflows/actions/setup-node-project@epmcdme-16232-v3
+        uses: codemie-ai/ci-workflows/actions/setup-node-project@84f121ac899deab768202d4a1f9164322737b8ae # pre-release snapshot
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: '1'
@@ -28,7 +28,9 @@ jobs:
 
       - name: Validate PR title
         id: pr_title
-        run: echo "${{ github.event.pull_request.title }}" | npx commitlint --verbose
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: printf '%s\n' "$PR_TITLE" | npx commitlint --verbose
 
       - name: Write validation summary
         if: always()
@@ -38,13 +40,15 @@ jobs:
           COMMIT_OUTCOME: ${{ steps.commit_message.outcome }}
           PR_TITLE_OUTCOME: ${{ steps.pr_title.outcome }}
         run: |
-          {
-            printf '### Commit & PR Validation\n\n'
-            printf '| Check | Result |\n| --- | --- |\n'
-            printf '| Project setup | %s |\n' "$SETUP_OUTCOME"
-            printf '| Last commit message | %s |\n' "$COMMIT_OUTCOME"
-            printf '| PR title | %s |\n' "$PR_TITLE_OUTCOME"
-          } >> "$GITHUB_STEP_SUMMARY"
+          cat <<EOF >> "$GITHUB_STEP_SUMMARY"
+          ### Commit & PR Validation
+
+          | Check | Result |
+          | --- | --- |
+          | Project setup | $SETUP_OUTCOME |
+          | Last commit message | $COMMIT_OUTCOME |
+          | PR title | $PR_TITLE_OUTCOME |
+          EOF
 
   secrets-detection:
     name: Secrets Detection
@@ -55,7 +59,7 @@ jobs:
       contents: read
       pull-requests: read
 
-    uses: codemie-ai/ci-workflows/.github/workflows/reusable-secrets-detection.yml@epmcdme-16232-v3
+    uses: codemie-ai/ci-workflows/.github/workflows/reusable-secrets-detection.yml@84f121ac899deab768202d4a1f9164322737b8ae # pre-release snapshot
 
   linters:
     name: Code Quality Checks
@@ -66,7 +70,7 @@ jobs:
     steps:
       - name: Prepare Node.js project
         id: setup
-        uses: codemie-ai/ci-workflows/actions/setup-node-project@epmcdme-16232-v3
+        uses: codemie-ai/ci-workflows/actions/setup-node-project@84f121ac899deab768202d4a1f9164322737b8ae # pre-release snapshot
 
       - name: Run TypeScript type checking
         id: typecheck
@@ -99,16 +103,18 @@ jobs:
           MARKDOWN_OUTCOME: ${{ steps.markdown.outcome }}
           SPELLING_OUTCOME: ${{ steps.spelling.outcome }}
         run: |
-          {
-            printf '### Code Quality Checks\n\n'
-            printf '| Check | Result |\n| --- | --- |\n'
-            printf '| Project setup | %s |\n' "$SETUP_OUTCOME"
-            printf '| TypeScript | %s |\n' "$TYPECHECK_OUTCOME"
-            printf '| ESLint | %s |\n' "$ESLINT_OUTCOME"
-            printf '| Prettier | %s |\n' "$PRETTIER_OUTCOME"
-            printf '| Markdown | %s |\n' "$MARKDOWN_OUTCOME"
-            printf '| Spelling | %s |\n' "$SPELLING_OUTCOME"
-          } >> "$GITHUB_STEP_SUMMARY"
+          cat <<EOF >> "$GITHUB_STEP_SUMMARY"
+          ### Code Quality Checks
+
+          | Check | Result |
+          | --- | --- |
+          | Project setup | $SETUP_OUTCOME |
+          | TypeScript | $TYPECHECK_OUTCOME |
+          | ESLint | $ESLINT_OUTCOME |
+          | Prettier | $PRETTIER_OUTCOME |
+          | Markdown | $MARKDOWN_OUTCOME |
+          | Spelling | $SPELLING_OUTCOME |
+          EOF
 
   build:
     name: Build Documentation
@@ -120,9 +126,13 @@ jobs:
       contents: read
 
     steps:
+      - name: Prepare Node.js project
+        id: setup
+        uses: codemie-ai/ci-workflows/actions/setup-node-project@84f121ac899deab768202d4a1f9164322737b8ae # pre-release snapshot
+
       - name: Build project with PR preview configuration
         id: build_site
-        uses: codemie-ai/ci-workflows/actions/build-site@epmcdme-16232-v3
+        run: npm run build
         env:
           DOCUSAURUS_URL: https://codemie-docs-pr-previews.s3.eu-central-1.amazonaws.com
           DOCUSAURUS_BASE_URL: /pr-${{ github.event.pull_request.number }}/
@@ -139,14 +149,19 @@ jobs:
         if: always()
         shell: bash
         env:
+          SETUP_OUTCOME: ${{ steps.setup.outcome }}
           BUILD_OUTCOME: ${{ steps.build_site.outcome }}
           UPLOAD_OUTCOME: ${{ steps.upload_artifact.outcome }}
           ARTIFACT_NAME: docs-build-pr-${{ github.event.pull_request.number }}
         run: |
-          {
-            printf '### Documentation Build\n\n'
-            printf '| Step | Result |\n| --- | --- |\n'
-            printf '| Site build | %s |\n' "$BUILD_OUTCOME"
-            printf '| Artifact upload | %s |\n' "$UPLOAD_OUTCOME"
-            printf '\nArtifact name: `%s`\n' "$ARTIFACT_NAME"
-          } >> "$GITHUB_STEP_SUMMARY"
+          cat <<EOF >> "$GITHUB_STEP_SUMMARY"
+          ### Documentation Build
+
+          | Step | Result |
+          | --- | --- |
+          | Project setup | $SETUP_OUTCOME |
+          | Site build | $BUILD_OUTCOME |
+          | Artifact upload | $UPLOAD_OUTCOME |
+
+          Artifact name: $ARTIFACT_NAME
+          EOF
