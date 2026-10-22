@@ -118,21 +118,12 @@ jobs:
     needs: [secrets-detection, linters]
     if: github.event_name == 'pull_request'
 
+    permissions:
+      contents: read
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
-      - name: Setup Node.js
-        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
-        with:
-          node-version: '24'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
       - name: Build project with PR preview configuration
-        run: npm run build
+        uses: codemie-ai/ci-workflows/actions/build-site@epmcdme-16232-v3
         env:
           DOCUSAURUS_URL: https://codemie-docs-pr-previews.s3.eu-central-1.amazonaws.com
           DOCUSAURUS_BASE_URL: /pr-${{ github.event.pull_request.number }}/
