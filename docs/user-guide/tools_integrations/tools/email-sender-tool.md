@@ -217,22 +217,3 @@ Keep the current `email_id` isolated for each message, especially if processing 
 This pattern provides **at-least-once processing**, not exactly-once delivery. An action can succeed and the subsequent move can fail, leaving the message to be processed again. Use an idempotency key or durable record of completed business actions to prevent duplicate effects. Do not rely on moving the message as the only proof that its business action completed.
 
 Avoid overlapping runs against the same queue unless you have a claim or locking mechanism. Define a review or dead-letter policy for repeatedly failing messages; paging lets a run reach later messages, but does not resolve those failures. A failed direct Tool state can stop the current run, so retry and recovery behavior must be designed explicitly.
-
-## Upgrading from the Email Sender tool
-
-The former **Notification → Email** tool is now **Email → Send Email**, with tool identifier `send_email`. Stored integration settings, assistant and workflow references, and user integration selections are migrated during the upgrade.
-
-Update API/SDK payloads, imported configurations, and scripts to use the current names and credential keys:
-
-| Previous value                         | Current value                                                                                       |
-| -------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| Tool `Email` in toolkit `Notification` | Tool `send_email` in toolkit `Email`                                                                |
-| `url`                                  | `smtp_url`                                                                                          |
-| `smtp_username`                        | `username`; also configure `smtp_from_email`                                                        |
-| `smtp_password`                        | `password`                                                                                          |
-| `oauth_from_email`                     | `smtp_from_email`                                                                                   |
-| No capability flags                    | Set both `inbound_enabled` and `outbound_enabled` explicitly. For SMTP-only use `false` and `true`. |
-
-Temporary compatibility for one release accepts the old `Email` name and converts legacy credential dictionaries. If both capability flags are absent from a legacy dictionary, it is treated as SMTP-only. Explicit new fields take precedence over legacy values. New clients should use the current schema rather than depend on this compatibility.
-
-Also account for the changes to certificate verification and SMTP error handling described above. Update and deploy the matching backend and UI together so that the integration form and API use the same configuration contract.
