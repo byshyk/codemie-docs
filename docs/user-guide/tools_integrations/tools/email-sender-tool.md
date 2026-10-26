@@ -11,92 +11,120 @@ sidebar_position: 14
 
 # Email Toolkit
 
-The Email toolkit lets assistants and workflows read a mailbox through IMAP and send messages through SMTP. You can enable receiving, sending, or both in one Email integration, then select only the tools your assistant or workflow needs.
+The Email toolkit lets your assistant read emails and attachments, send messages, and organize mailbox folders. You can enable receiving, sending, or both in the same integration.
 
-This page describes the unified **Email** toolkit. Older deployments may still show the SMTP-only **Notification → Email** tool. See [Upgrading from the Email Sender tool](#upgrading-from-the-email-sender-tool) for the changes.
+## 1. Configure an Email integration
 
-## Configure an Email integration
+1. Open **Integrations**, choose **User** or **Project**, and click **+ Create**.
+2. Select **Email** as the credential type, choose your project, and enter an alias, such as `support-mailbox`.
+3. Enable the capabilities you need:
+   - **Receive emails (IMAP)** to list, read, copy, move, or delete messages.
+   - **Send emails (SMTP)** to send messages.
+4. Fill in the mail server and authentication settings below. At least one capability must be enabled.
+5. Click **Test Integration** to check the connection, then save the integration. The test does not send an email.
 
-Create an integration with credential type **Email**, select its project, and give it an alias. Enable at least one capability:
+### Mail server settings
 
-- **Receive emails (IMAP)** for listing, reading, copying, moving, or deleting messages.
-- **Send emails (SMTP)** for sending messages.
+Ask your mail administrator for the server addresses and mailbox permissions if you are unsure which values to use.
 
-### Mailbox and server settings
+| Setting         | When to provide it                                                                   |
+| --------------- | ------------------------------------------------------------------------------------ |
+| IMAP server     | When receiving is enabled. Use `host:port`, for example `outlook.office365.com:993`. |
+| Mailbox address | The email address of the mailbox you want to read.                                   |
+| SMTP server     | When sending is enabled. Use `host:port`, for example `smtp.office365.com:587`.      |
+| Sender address  | The email address to send messages from.                                             |
 
-| Setting           | Credential key       | When to provide it                                                            |
-| ----------------- | -------------------- | ----------------------------------------------------------------------------- |
-| Receive emails    | `inbound_enabled`    | Set explicitly to `true` or `false`.                                          |
-| Send emails       | `outbound_enabled`   | Set explicitly to `true` or `false`. At least one capability must be enabled. |
-| IMAP server       | `imap_url`           | For receiving. Use `host:port`; the default is `outlook.office365.com:993`.   |
-| Mailbox to access | `imap_email_address` | Required when receiving is enabled.                                           |
-| SMTP server       | `smtp_url`           | For sending. Use `host:port`; the default is `smtp.office365.com:587`.        |
-| Sender address    | `smtp_from_email`    | Required when sending is enabled.                                             |
-
-The login identity, mailbox address, and sender address can differ. For example, a service account can access a shared mailbox and send from another address when the mail server grants the necessary permissions. A sender override in a tool call does not grant permission to send as that address.
+The login account can differ from the mailbox or sender address, for example when accessing a shared mailbox. Your mail administrator must grant the account permission to use those addresses.
 
 ### Authentication
 
-Choose one authentication method for the enabled capabilities:
+- **Basic**: enter your username and password. Use an app password if your mail provider requires one and your organization allows it.
+- **Microsoft Entra ID OAuth**: enter the tenant ID, client ID, and client secret supplied by your administrator. The application needs permission to access the mailbox and use the enabled mail protocols.
 
-| Method                                                      | Credential keys                                             | Requirements                                                                                                                |
-| ----------------------------------------------------------- | ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| Basic (`auth_type=basic`)                                   | `username`, `password`                                      | Both are required. Use an app password when your provider requires one and your organization permits it.                    |
-| Microsoft Entra application OAuth (`auth_type=oauth_azure`) | `oauth_tenant_id`, `oauth_client_id`, `oauth_client_secret` | All three are required. An administrator must configure the application's access to the mailbox and enabled mail protocols. |
-
-For Microsoft Entra authentication, `oauth_authority` defaults to `https://login.microsoftonline.com` and `oauth_scope` defaults to `https://outlook.office365.com/.default`. Basic authentication is the default method.
-
-Your mail provider must allow the selected authentication method. If organization policy disables Basic authentication or app passwords, use an authentication method approved by your administrator.
-
-Use **Test Integration** before saving or using the integration. The test checks each enabled capability: IMAP connects and selects `Inbox`; SMTP connects, authenticates, and checks the connection without sending a message. A successful test does not prove that every folder or sender override is permitted.
-
-### TLS and private certificate authorities
-
-IMAP uses TLS, and SMTP uses STARTTLS. CodeMie verifies the server certificate and hostname before authenticating.
+If your organization disables Basic authentication or app passwords, ask your administrator which method to use.
 
 :::note Private or corporate mail servers
-If your mail server uses a certificate signed by a private certificate authority (CA), ask your administrator to add that CA to the CodeMie runtime's trust store. An untrusted, expired, or incorrectly named certificate causes the connection to fail.
+CodeMie checks the mail server's security certificate. If your server uses a private certificate authority (CA), ask your administrator to add that CA to the CodeMie runtime's trust store. Invalid, expired, or untrusted certificates prevent the connection.
 :::
 
-## Enable tools in an assistant or workflow
+## 2. Add Email tools to an assistant
 
-In the assistant's tool selection, choose **Email** and add the tools you need. Select your integration or use the integration lookup configured for the assistant. For a workflow Tool state, select the Email tool and the intended integration alias.
+1. Create or edit an assistant.
+2. In its tool selection, expand **Email**.
+3. Select the tools you need from the table below.
+4. Choose the integration alias you created, then save the assistant.
 
-Enabling IMAP does not automatically expose every Email tool to an assistant. Give a reader only the read tools it needs; add sending or mailbox modification tools only when required by the task.
+For a workflow Tool state, select the desired Email tool and its integration alias. Receiving must be enabled for mailbox tools; sending must be enabled for Send Email.
 
-| Tool                    | Purpose                                                 | Main arguments                                   |
-| ----------------------- | ------------------------------------------------------- | ------------------------------------------------ |
-| `list_email_folder`     | List message IDs in pages without modifying the folder. | Optional `folder`, `limit`, and `after_email_id` |
-| `read_email`            | Read a message, participants, and attachment metadata.  | `email_id`, optional `convert_body_to_markdown`  |
-| `read_email_attachment` | Retrieve supported attachment content.                  | `email_id`, `attachment_id`                      |
-| `copy_email`            | Copy a message to an existing folder.                   | `email_id`, `destination_folder`                 |
-| `move_email`            | Move a message to an existing folder.                   | `email_id`, `destination_folder`                 |
-| `delete_email`          | Permanently delete the selected message.                | `email_id`                                       |
-| `send_email`            | Send a message through SMTP.                            | `recipient_emails`, `subject`, `body`            |
+| Tool                                                | What it does                                                              |
+| --------------------------------------------------- | ------------------------------------------------------------------------- |
+| **List Email Folder** (`list_email_folder`)         | Lists message IDs in a folder, one page at a time. Uses Inbox by default. |
+| **Read Email** (`read_email`)                       | Reads a message and lists its attachments.                                |
+| **Read Email Attachment** (`read_email_attachment`) | Reads the content of a supported attachment.                              |
+| **Copy Email** (`copy_email`)                       | Copies a message to an existing folder.                                   |
+| **Move Email** (`move_email`)                       | Moves a message to an existing folder.                                    |
+| **Delete Email** (`delete_email`)                   | Permanently deletes a message.                                            |
+| **Send Email** (`send_email`)                       | Sends an email, with optional CC and BCC recipients.                      |
 
-### Read messages and attachments
+Give an assistant only the tools it needs. For example, an assistant that summarizes emails can use the three reading tools without permission to send or delete messages.
 
-Use the exact `email_id` returned by a listing or another Email tool. IDs include the folder and its IMAP UIDVALIDITY. A move changes the message's location; use the returned `destination_email_id` when available, or list the destination folder to obtain its ID. Copying leaves the source ID valid.
+## 3. Use your assistant
 
-`read_email` converts HTML bodies to Markdown by default. Set `convert_body_to_markdown=false` only when you need the HTML representation. Plain-text bodies are unchanged.
+Once the integration and tools are configured, you can ask your assistant to:
 
-Attachment metadata from `read_email` includes `attachment_id` and `encoded_size_bytes`: the MIME-encoded payload size, or `null` when unavailable. Call `read_email_attachment` for the attachment content and decoded `size_bytes`.
+**List messages:**
 
-Supported attachments include text files, HTML, PDF, Word (`.docx`), PowerPoint (`.pptx`), Excel, and PNG/JPEG/GIF/WebP images. Text files return text; HTML and supported documents return Markdown. Documents without extractable text return an error.
+> "List the first 10 message IDs in my Inbox."
 
-Limits are:
+**Read a message:**
 
-- **25 MiB per message**, checked before downloading the full message.
-- **10 MiB per decoded attachment**, checked before conversion.
-- **5 MiB per image**, with PNG, JPEG, GIF, and WebP supported and checked by byte signature.
+> "Read the first message from that list and summarize it."
 
-Oversized or unsupported content returns an error. Assistant calls can pass supported images to the model as image artifacts. Workspace scripts and direct workflow Tool states receive image content as base64, so avoid placing large image results in workflow context when they are not needed.
+**Read an attachment:**
+
+> "List the attachments on that message and summarize the PDF attachment."
+
+**Move a message:**
+
+> "Move that message to the Processed folder."
+
+Create the destination folder in your mail application before asking the assistant to move or copy a message.
+
+**Send a message:**
+
+> "Draft an email to colleague@example.com with the subject 'Meeting notes' and the summary above. Show me the draft and ask for my approval before sending."
+
+For a complete workflow that generates an onboarding email and pauses for approval before sending it, see the [human-in-the-loop workflow example](../../workflows/configuration/examples.md#115-example-human-in-the-loop-workflow-interrupt_before).
+
+## Supported content and limits
+
+Email bodies are returned as Markdown by default. You can disable **Convert body to Markdown** when you need the original HTML representation. Plain-text bodies are unchanged.
+
+Supported attachments include text files, HTML, PDF, Word (`.docx`), PowerPoint (`.pptx`), Excel, and PNG/JPEG/GIF/WebP images. Documents without extractable text and unsupported formats return an error.
+
+| Content            | Maximum size |
+| ------------------ | ------------ |
+| Email message      | 25 MiB       |
+| Decoded attachment | 10 MiB       |
+| Image attachment   | 5 MiB        |
+
+Assistant calls can pass supported images to the model for visual analysis. Workspace scripts and direct workflow Tool states receive images as base64; avoid storing large image results in workflow context when they are not needed.
+
+:::warning Permanent deletion
+Delete Email permanently removes the selected message. Moving it to a review folder is preferable when recovery may be needed. The tool description asks for confirmation, but does not enforce an approval step. Configure the applicable tool approval policy or workflow control before allowing destructive actions.
+:::
+
+## Workflow and API reference
+
+Use the exact `email_id` returned by a listing or another Email tool. After moving a message, use its returned `destination_email_id`; if that value is missing, list the destination folder to obtain the new ID. Copying leaves the source ID valid.
+
+`read_email` returns attachment IDs and `encoded_size_bytes` (the MIME-encoded size, or `null` when unavailable). Pass `email_id` and `attachment_id` to `read_email_attachment` to retrieve its content and decoded `size_bytes`. Text files return text; HTML and supported documents return Markdown.
 
 ### List messages with pagination
 
 `list_email_folder` reads `Inbox` when `folder` is omitted and returns IDs in ascending IMAP UID order. `limit` defaults to 1,000 and accepts values from 1 to 1,000.
 
-For the first page, omit `after_email_id`:
+For the first page, omit `cursor`:
 
 ```json
 {
@@ -115,11 +143,11 @@ The result can be:
     { "email_id": "imap:Inbox:12345:11" }
   ],
   "has_more": true,
-  "next_email_id": "imap:Inbox:12345:11"
+  "next_cursor": "imap:Inbox:12345:11"
 }
 ```
 
-When `has_more` is `true`, call the tool again with the same folder and pass `next_email_id` as `after_email_id`. The next page contains UIDs strictly greater than the continuation UID. On the final page, `has_more` is `false` and `next_email_id` is `null`.
+When `has_more` is `true`, call the tool again with the same folder and pass `next_cursor` as `cursor`. Treat the cursor as a continuation value and pass it unchanged. It marks the last message already returned, so the next page starts strictly after that message; no message is skipped. On the final page, `has_more` is `false` and `next_cursor` is `null`.
 
 For the example above, the next call's arguments are:
 
@@ -127,35 +155,31 @@ For the example above, the next call's arguments are:
 {
   "folder": "Inbox",
   "limit": 2,
-  "after_email_id": "imap:Inbox:12345:11"
+  "cursor": "imap:Inbox:12345:11"
 }
 ```
 
-Continue using each page's returned `next_email_id` until `has_more` is `false`. An empty folder returns `email_items: []`, `has_more: false`, and `next_email_id: null`.
+Continue using each page's returned `next_cursor` until `has_more` is `false`. An empty folder returns `email_items: []`, `has_more: false`, and `next_cursor: null`.
 
 You can move or delete processed messages before requesting the next page: the continuation message does not need to remain in the source folder. The continuation must refer to the same folder and UIDVALIDITY. If the mailbox's UIDVALIDITY changes, discard the continuation and start a new listing.
 
-Pages reflect the current mailbox, not a fixed snapshot. Start each new scheduled processing run **without** `after_email_id` so that earlier messages left for retry are not skipped. This continuation is for paging within a run, not a durable processing checkpoint.
+Pages reflect the current mailbox, not a fixed snapshot. Start each new scheduled processing run **without** `cursor` so that earlier messages left for retry are not skipped. This continuation is for paging within a run, not a durable processing checkpoint.
 
-### Send messages
+### Sending and mailbox operations
 
-Provide `recipient_emails` as a non-empty list, plus `subject` and `body`. The body can contain HTML. Optional arguments are `cc_emails`, `bcc_emails`, `from_email`, and `timeout` (30 seconds by default).
+`send_email` requires `recipient_emails` as a non-empty list, plus `subject` and `body`. The body can contain HTML. Optional arguments are `cc_emails`, `bcc_emails`, `from_email`, and `timeout` (30 seconds by default).
 
-If `from_email` is omitted, the tool uses `smtp_from_email` from the integration. Any override must be authorized by the SMTP server. Sending requires the outbound capability even when the integration also supports receiving.
+If `from_email` is omitted, the integration's sender address is used. An override requires permission from the SMTP server.
 
-A sending failure raises a tool error. A direct workflow Tool state can stop the run on that error; do not assume that the next state will execute or that a failure will be returned as a successful text result. Agent-mediated tool error handling follows the agent's execution policy.
+A sending failure raises a tool error. A direct workflow Tool state can stop the run on that error; do not assume that the next state will execute. Agent-mediated tool error handling follows the agent's execution policy.
 
-For a complete workflow that generates an onboarding email and pauses for approval before sending it, see the [human-in-the-loop workflow example](../../workflows/configuration/examples.md#115-example-human-in-the-loop-workflow-interrupt_before).
+Moving requires the server's IMAP `MOVE` capability. Deleting requires `UIDPLUS` for deletion that affects only the selected message; the tool fails before marking the message for deletion if this capability is unavailable. Delete Email is unavailable through workspace-script calls.
 
-### Move, copy, and delete messages
+### Connection settings
 
-Create destination folders before calling `move_email` or `copy_email`. Moving requires the server's IMAP `MOVE` capability.
+IMAP uses TLS, and SMTP uses STARTTLS. Both verify the server certificate and hostname. The integration test checks each enabled capability: IMAP connects and selects Inbox; SMTP connects and authenticates without sending. A successful test does not guarantee access to every folder or permission to use a different sender address.
 
-:::warning Permanent deletion
-`delete_email` requires IMAP `UIDPLUS` and uses UID-scoped expunge. It fails before setting the deletion flag if the server does not support safe deletion. Confirm the intended message before invoking it. Moving to a review or processed folder is preferable when you need an audit trail or recovery.
-:::
-
-`delete_email` is unavailable through workspace-script calls. Its description's request for confirmation does not itself enforce a human approval step; configure the applicable tool approval policy or workflow control before allowing destructive actions.
+Microsoft Entra authentication uses `https://login.microsoftonline.com` as the default authority and `https://outlook.office365.com/.default` as the default scope.
 
 ## Untrusted email content and prompt injection
 
