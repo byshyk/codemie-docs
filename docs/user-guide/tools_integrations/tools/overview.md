@@ -131,7 +131,7 @@ The table below shows which tools require integration setup and the integration 
 | **FileSystem => Code Interpreter**                    |        ❌ No         |       ---        |         ❌ No          |
 | **FileSystem => Code Executor**                       |        ❌ No         |       ---        |         ❌ No          |
 | **FileSystem => Generate Image**                      |        ❌ No         |       ---        |         ❌ No          |
-| **Notification => Email**                             |        ✅ Yes        |      Email       |         ❌ No          |
+| **Email**                                             |        ✅ Yes        |      Email       |         ❌ No          |
 | **LiteLLM**                                           |        ✅ Yes        |     LiteLLM      |         ❌ No          |
 | **Report Portal**                                     |        ✅ Yes        |   ReportPortal   |         ❌ No          |
 | **Codebase Tools => Sonar**                           |        ✅ Yes        |      Sonar       |         ❌ No          |

@@ -64,15 +64,15 @@ In the assistant's tool selection, choose **Email** and add the tools you need. 
 
 Enabling IMAP does not automatically expose every Email tool to an assistant. Give a reader only the read tools it needs; add sending or mailbox modification tools only when required by the task.
 
-| Tool                    | Purpose                                                | Main arguments                                  |
-| ----------------------- | ------------------------------------------------------ | ----------------------------------------------- |
-| `list_email_folder`     | List message IDs in a folder without modifying it.     | `folder`, optional `limit` and `after_email_id` |
-| `read_email`            | Read a message, participants, and attachment metadata. | `email_id`, optional `convert_body_to_markdown` |
-| `read_email_attachment` | Retrieve supported attachment content.                 | `email_id`, `attachment_id`                     |
-| `copy_email`            | Copy a message to an existing folder.                  | `email_id`, `destination_folder`                |
-| `move_email`            | Move a message to an existing folder.                  | `email_id`, `destination_folder`                |
-| `delete_email`          | Permanently delete the selected message.               | `email_id`                                      |
-| `send_email`            | Send a message through SMTP.                           | `recipient_emails`, `subject`, `body`           |
+| Tool                    | Purpose                                                 | Main arguments                                   |
+| ----------------------- | ------------------------------------------------------- | ------------------------------------------------ |
+| `list_email_folder`     | List message IDs in pages without modifying the folder. | Optional `folder`, `limit`, and `after_email_id` |
+| `read_email`            | Read a message, participants, and attachment metadata.  | `email_id`, optional `convert_body_to_markdown`  |
+| `read_email_attachment` | Retrieve supported attachment content.                  | `email_id`, `attachment_id`                      |
+| `copy_email`            | Copy a message to an existing folder.                   | `email_id`, `destination_folder`                 |
+| `move_email`            | Move a message to an existing folder.                   | `email_id`, `destination_folder`                 |
+| `delete_email`          | Permanently delete the selected message.                | `email_id`                                       |
+| `send_email`            | Send a message through SMTP.                            | `recipient_emails`, `subject`, `body`            |
 
 ### Read messages and attachments
 
@@ -82,6 +82,8 @@ Use the exact `email_id` returned by a listing or another Email tool. IDs includ
 
 Attachment metadata from `read_email` includes `attachment_id` and `encoded_size_bytes`: the MIME-encoded payload size, or `null` when unavailable. Call `read_email_attachment` for the attachment content and decoded `size_bytes`.
 
+Supported attachments include text files, HTML, PDF, Word (`.docx`), PowerPoint (`.pptx`), Excel, and PNG/JPEG/GIF/WebP images. Text files return text; HTML and supported documents return Markdown. Documents without extractable text return an error.
+
 Limits are:
 
 - **25 MiB per message**, checked before downloading the full message.
@@ -90,11 +92,20 @@ Limits are:
 
 Oversized or unsupported content returns an error. Assistant calls can pass supported images to the model as image artifacts. Workspace scripts and direct workflow Tool states receive image content as base64, so avoid placing large image results in workflow context when they are not needed.
 
-### List more than 1,000 messages
+### List messages with pagination
 
-`list_email_folder` returns IDs in ascending IMAP UID order. `limit` defaults to 1,000 and accepts values from 1 to 1,000.
+`list_email_folder` reads `Inbox` when `folder` is omitted and returns IDs in ascending IMAP UID order. `limit` defaults to 1,000 and accepts values from 1 to 1,000.
 
-For example, listing with `folder: Inbox` and `limit: 2` can return:
+For the first page, omit `after_email_id`:
+
+```json
+{
+  "folder": "Inbox",
+  "limit": 2
+}
+```
+
+The result can be:
 
 ```json
 {
@@ -110,6 +121,18 @@ For example, listing with `folder: Inbox` and `limit: 2` can return:
 
 When `has_more` is `true`, call the tool again with the same folder and pass `next_email_id` as `after_email_id`. The next page contains UIDs strictly greater than the continuation UID. On the final page, `has_more` is `false` and `next_email_id` is `null`.
 
+For the example above, the next call's arguments are:
+
+```json
+{
+  "folder": "Inbox",
+  "limit": 2,
+  "after_email_id": "imap:Inbox:12345:11"
+}
+```
+
+Continue using each page's returned `next_email_id` until `has_more` is `false`. An empty folder returns `email_items: []`, `has_more: false`, and `next_email_id: null`.
+
 You can move or delete processed messages before requesting the next page: the continuation message does not need to remain in the source folder. The continuation must refer to the same folder and UIDVALIDITY. If the mailbox's UIDVALIDITY changes, discard the continuation and start a new listing.
 
 Pages reflect the current mailbox, not a fixed snapshot. Start each new scheduled processing run **without** `after_email_id` so that earlier messages left for retry are not skipped. This continuation is for paging within a run, not a durable processing checkpoint.
@@ -121,6 +144,8 @@ Provide `recipient_emails` as a non-empty list, plus `subject` and `body`. The b
 If `from_email` is omitted, the tool uses `smtp_from_email` from the integration. Any override must be authorized by the SMTP server. Sending requires the outbound capability even when the integration also supports receiving.
 
 A sending failure raises a tool error. A direct workflow Tool state can stop the run on that error; do not assume that the next state will execute or that a failure will be returned as a successful text result. Agent-mediated tool error handling follows the agent's execution policy.
+
+For a complete workflow that generates an onboarding email and pauses for approval before sending it, see the [human-in-the-loop workflow example](../../workflows/configuration/examples.md#115-example-human-in-the-loop-workflow-interrupt_before).
 
 ### Move, copy, and delete messages
 
