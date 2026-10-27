@@ -207,8 +207,10 @@ A folder can act as a visible queue. Create source and destination folders, then
 ```text
 Scheduler
   → list_email_folder(Unprocessed)
-  → for each message: read → classify → validate result → perform approved action
-  → move successful messages to Processed
+  → for each message:
+      read → classify → validate result
+      → perform approved action
+      → move successful messages to Processed
 ```
 
 Each scheduled run can process a limited batch. Messages not processed remain in the source folder for the next run. Start each run without `cursor` so it picks up the messages still waiting. Keep the current `email_id` isolated for each message, especially if processing items in parallel.
