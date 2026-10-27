@@ -11,7 +11,7 @@ sidebar_position: 14
 
 # Email Toolkit
 
-The Email toolkit lets your assistant read emails and attachments, send messages, and organize mailbox folders. You can enable receiving, sending, or both in the same integration.
+The Email toolkit lets your assistant read emails and attachments, send messages, and organize messages in mailbox folders. You can enable receiving, sending, or both in the same integration.
 
 ## 1. Configure an Email integration
 
@@ -30,9 +30,9 @@ Ask your mail administrator for the server addresses and mailbox permissions if 
 | Setting         | When to provide it                                                                   |
 | --------------- | ------------------------------------------------------------------------------------ |
 | IMAP server     | When receiving is enabled. Use `host:port`, for example `outlook.office365.com:993`. |
-| Mailbox address | The email address of the mailbox you want to read.                                   |
+| Mailbox address | When receiving is enabled. The email address of the mailbox you want to read.        |
 | SMTP server     | When sending is enabled. Use `host:port`, for example `smtp.office365.com:587`.      |
-| Sender address  | The email address to send messages from.                                             |
+| Sender address  | When sending is enabled. The email address to send messages from.                    |
 
 The login account can differ from the mailbox or sender address, for example when accessing a shared mailbox. Your mail administrator must grant the account permission to use those addresses.
 
@@ -147,7 +147,7 @@ The result can be:
 }
 ```
 
-When `has_more` is `true`, call the tool again with the same folder and pass `next_cursor` as `cursor`. Treat the cursor as a continuation value and pass it unchanged. It marks the last message already returned, so the next page starts strictly after that message; no message is skipped. On the final page, `has_more` is `false` and `next_cursor` is `null`.
+When `has_more` is `true`, call the tool again with the same folder and pass `next_cursor` as `cursor`. Treat the cursor as a continuation value and pass it unchanged. It marks the last message already returned, so the next page starts strictly after that message in IMAP UID order. On the final page, `has_more` is `false` and `next_cursor` is `null`.
 
 For the example above, the next call's arguments are:
 
@@ -209,11 +209,10 @@ Scheduler
   → list_email_folder(Unprocessed)
   → for each message: read → classify → validate result → perform approved action
   → move successful messages to Processed
-  → request the next page while has_more is true
 ```
 
-Keep the current `email_id` isolated for each message, especially if processing items in parallel. A message left in the source folder remains eligible for a later run. Start the next run without a continuation ID, and bound each run's work so a growing mailbox does not keep it running indefinitely.
+Each scheduled run can process a limited batch. Messages not processed remain in the source folder for the next run. Start each run without `cursor` so it picks up the messages still waiting. Keep the current `email_id` isolated for each message, especially if processing items in parallel.
 
 This pattern provides **at-least-once processing**, not exactly-once delivery. An action can succeed and the subsequent move can fail, leaving the message to be processed again. Use an idempotency key or durable record of completed business actions to prevent duplicate effects. Do not rely on moving the message as the only proof that its business action completed.
 
-Avoid overlapping runs against the same queue unless you have a claim or locking mechanism. Define a review or dead-letter policy for repeatedly failing messages; paging lets a run reach later messages, but does not resolve those failures. A failed direct Tool state can stop the current run, so retry and recovery behavior must be designed explicitly.
+It is recommended to use **Move Email** to move messages that fail processing to a dedicated folder, such as Errors, for manual review. This helps prevent those messages from blocking subsequent runs. Create the destination folder in your mail application first.
